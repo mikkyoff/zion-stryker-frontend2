@@ -29,7 +29,12 @@ export default function Dashboard(){
     async function load(){
       try{
         const data = await fetchSignals({ timeframe, mode, asset: 'ALL' })
-        const enriched = (data || []).map((s, idx) => ({ ...s, _id: `${s.asset}-${s.timeframe}-${s.direction}-${idx}-${Date.now()}`, _ts: Date.now(), reasons: s.reasons || s.reason ? (s.reasons || [s.reason]) : [] }))
+        const enriched = (data || []).map((s, idx) => ({ 
+          ...s, 
+          _id: `${s.asset}-${s.timeframe}-${s.direction}-${idx}-${Date.now()}`, 
+          _ts: Date.now(), 
+          reasons: s.reasons || s.reason ? (s.reasons || [s.reason]) : [] 
+        }))
         setSignals(enriched)
         setHistory(prev => {
           const combined = [...enriched, ...prev]
@@ -46,13 +51,16 @@ export default function Dashboard(){
     }
 
     load()
-    if (auto && scannerOn) {
-      timerRef.current = setInterval(load, Math.max(3, intervalSec) * 1000)
+    
+    // Always auto-refresh every 5 seconds when scanner is ON
+    if (scannerOn) {
+      timerRef.current = setInterval(load, 5000)
     } else {
       clearInterval(timerRef.current)
     }
+    
     return ()=> clearInterval(timerRef.current)
-  }, [timeframe, mode, auto, intervalSec, scannerOn])
+  }, [timeframe, mode, scannerOn])
 
   async function handleToggleScanner(){
     try{
@@ -99,9 +107,25 @@ export default function Dashboard(){
           <div key={s._id} style={{border:'1px solid rgba(255,255,255,0.06)',padding:10,borderRadius:8,marginBottom:8,background:'rgba(255,255,255,0.02)'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
-                <strong>{s.asset}</strong> <span style={{marginLeft:8,padding:'2px 8px',borderRadius:9999,background: s.direction && s.direction.toLowerCase()==='buy' ? '#064e3b' : '#7f1d1d'}}>{s.direction}</span>
-                <span style={{marginLeft:8, padding:'2px 8px', borderRadius:9999, background:'#075985'}}>{s.timeframe}</span>
-                <span style={{marginLeft:8, padding:'2px 8px', borderRadius:9999, background: (s.urgency||'').toLowerCase()==='hot' ? '#b91c1c' : '#b45309'}}>{s.urgency || 'normal'}</span>
+                <strong>{s.asset}</strong> 
+                <span style={{marginLeft:8,padding:'2px 8px',borderRadius:9999,background: s.direction && s.direction.toLowerCase()==='buy' ? '#064e3b' : '#7f1d1d'}}>
+                  {s.direction}
+                </span>
+                <span style={{marginLeft:8, padding:'2px 8px', borderRadius:9999, background:'#075985'}}>
+                  {s.timeframe}
+                </span>
+                <span style={{
+                  marginLeft:8, 
+                  padding:'2px 8px', 
+                  borderRadius:9999, 
+                  background: 
+                    (s.urgency||'').toLowerCase()==='hot' ? '#dc2626' :
+                    (s.urgency||'').toLowerCase()==='sharp' ? '#f59e0b' :
+                    (s.urgency||'').toLowerCase()==='nice' ? '#10b981' :
+                    '#6b7280'
+                }}>
+                  {s.urgency || 'super'}
+                </span>
               </div>
               <div style={{display:'flex',gap:8}}>
                 <button onClick={()=>openBrokerChart(s.asset)} style={{padding:'6px 10px', borderRadius:8}}>Open Chart</button>
